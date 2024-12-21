@@ -5,6 +5,7 @@ const PixelArtGenerator = () => {
   const [images, setImages] = useState([])
   const canvasRef = useRef(null)
   const outputCanvasRef = useRef({})
+  const fileInputRef = useRef(null)  // ファイル入力をリセットするために追加
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
@@ -16,8 +17,7 @@ const PixelArtGenerator = () => {
           setImages(prev => [...prev, {
             id: Date.now() + index,
             original: img,
-            name: file.name,
-            type: file.type // ファイルの種類を保存
+            name: file.name
           }])
         }
         img.src = event.target.result
@@ -74,10 +74,19 @@ const PixelArtGenerator = () => {
     }
   }
 
-  const handleSaveAll = () => {
+  const handleSaveAndClear = (id, fileName) => {
+    handleSave(id, fileName)
+    // この画像を配列から削除
+    setImages(prev => prev.filter(img => img.id !== id))
+    // キャンバスの参照も削除
+    delete outputCanvasRef.current[id]
+  }
+
+  const handleSaveAllAndClear = () => {
     images.forEach(img => {
       handleSave(img.id, img.name)
     })
+    handleClearAll()
   }
 
   const handlePixelSizeChange = (e) => {
@@ -91,6 +100,10 @@ const PixelArtGenerator = () => {
   const handleClearAll = () => {
     setImages([])
     outputCanvasRef.current = {}
+    // ファイル入力をリセット
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -114,6 +127,7 @@ const PixelArtGenerator = () => {
         <label className="block">
           <span className="block mb-2 text-sm font-medium text-gray-900">画像を選択してください:</span>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             multiple
@@ -124,7 +138,7 @@ const PixelArtGenerator = () => {
 
         <div className="flex space-x-4">
           <button
-            onClick={handleSaveAll}
+            onClick={handleSaveAllAndClear}
             disabled={images.length === 0}
             className="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -156,7 +170,7 @@ const PixelArtGenerator = () => {
               className="mx-auto mb-4"
             />
             <button
-              onClick={() => handleSave(img.id, img.name)}
+              onClick={() => handleSaveAndClear(img.id, img.name)}
               className="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
             >
               保存
