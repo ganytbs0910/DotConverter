@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react'
 
 const PixelArtGenerator = () => {
-  const [pixelSize, setPixelSize] = useState(8)  // ピクセルサイズを状態として管理
-  const [images, setImages] = useState([])       // 複数の画像を管理
+  const [pixelSize, setPixelSize] = useState(8)
+  const [images, setImages] = useState([])
   const canvasRef = useRef(null)
-  const outputCanvasRef = useRef({})            // 複数のキャンバスを管理するためにオブジェクトとして初期化
+  const outputCanvasRef = useRef({})
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
@@ -16,7 +16,8 @@ const PixelArtGenerator = () => {
           setImages(prev => [...prev, {
             id: Date.now() + index,
             original: img,
-            name: file.name
+            name: file.name,
+            type: file.type // ファイルの種類を保存
           }])
         }
         img.src = event.target.result
@@ -31,18 +32,15 @@ const PixelArtGenerator = () => {
     const ctx = canvas.getContext('2d')
     const outputCtx = outputCanvas.getContext('2d')
 
-    // 元画像の描画
     canvas.width = img.width
     canvas.height = img.height
     ctx.drawImage(img, 0, 0)
 
-    // 出力キャンバスのサイズを設定
     const width = Math.floor(canvas.width / pixelSize)
     const height = Math.floor(canvas.height / pixelSize)
     outputCanvas.width = width * pixelSize
     outputCanvas.height = height * pixelSize
 
-    // 各ピクセルブロックの色を計算
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const imageData = ctx.getImageData(x * pixelSize, y * pixelSize, pixelSize, pixelSize)
@@ -70,8 +68,7 @@ const PixelArtGenerator = () => {
     const outputCanvas = outputCanvasRef.current[canvasId]
     if (outputCanvas) {
       const link = document.createElement('a')
-      const pixelSizeStr = String(pixelSize).padStart(2, '0')
-      link.download = `pixel${pixelSizeStr}_${fileName}`
+      link.download = fileName
       link.href = outputCanvas.toDataURL()
       link.click()
     }
@@ -86,7 +83,6 @@ const PixelArtGenerator = () => {
   const handlePixelSizeChange = (e) => {
     const newSize = parseInt(e.target.value)
     setPixelSize(newSize)
-    // 既存の画像を新しいピクセルサイズで再変換
     images.forEach(img => {
       pixelateImage(img.original, img.id)
     })
@@ -129,13 +125,15 @@ const PixelArtGenerator = () => {
         <div className="flex space-x-4">
           <button
             onClick={handleSaveAll}
-            className="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+            disabled={images.length === 0}
+            className="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             全ての画像を保存
           </button>
           <button
             onClick={handleClearAll}
-            className="flex-1 py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75"
+            disabled={images.length === 0}
+            className="flex-1 py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             クリア
           </button>
@@ -147,6 +145,9 @@ const PixelArtGenerator = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {images.map((img) => (
           <div key={img.id} className="border rounded-lg p-4 bg-gray-50">
+            <div className="text-sm text-gray-600 mb-2 truncate">
+              {img.name}
+            </div>
             <canvas
               ref={el => {
                 outputCanvasRef.current[img.id] = el
@@ -158,7 +159,7 @@ const PixelArtGenerator = () => {
               onClick={() => handleSave(img.id, img.name)}
               className="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
             >
-              この画像を保存
+              保存
             </button>
           </div>
         ))}
